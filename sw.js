@@ -1,8 +1,9 @@
-const CACHE_NAME = 'hello-pwa-v1';
+const CACHE_NAME = 'habit-tracker-v1';
 const CACHE_ASSETS = [
     '/',
     '/index.html',
     '/styles.css',
+    '/app.js',
     '/manifest.json'
 ];
 

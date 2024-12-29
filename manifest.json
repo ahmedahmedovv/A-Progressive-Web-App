@@ -1,11 +1,11 @@
 {
-    "name": "Hello World PWA",
-    "short_name": "Hello PWA",
+    "name": "Habit Tracker",
+    "short_name": "Habits",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#2196F3",
-    "description": "A basic Hello World Progressive Web App",
+    "description": "A simple habit tracking Progressive Web App",
     "icons": [
         {
             "src": "icons/icon-192x192.png",
