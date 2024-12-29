@@ -129,15 +129,12 @@ class HabitTracker {
                     <div class="habit-name">${habit.name}</div>
                     ${habit.streak > 0 ? `<div class="streak">${habit.streak} day streak</div>` : ''}
                     <div class="timer-settings">
-                        <input type="number" 
-                               class="timer-input" 
-                               value="${habit.timerDuration}"
-                               min="1"
-                               max="3600"
-                               pattern="[0-9]*"
-                               inputmode="numeric"
-                               onchange="habitTracker.updateTimerDuration(${habit.id}, this.value)">
-                        <span class="timer-label">seconds</span>
+                        <button class="timer-btn" onclick="habitTracker.decrementTimer(${habit.id})">-</button>
+                        <div class="timer-display">
+                            <span class="timer-value">${habit.timerDuration}</span>
+                            <span class="timer-label">seconds</span>
+                        </div>
+                        <button class="timer-btn" onclick="habitTracker.incrementTimer(${habit.id})">+</button>
                     </div>
                 </div>
                 <div class="checkbox ${habit.dates[today] ? 'checked' : ''}"
@@ -245,10 +242,18 @@ class HabitTracker {
         }
     }
 
-    updateTimerDuration(habitId, newDuration) {
+    incrementTimer(habitId) {
         const habit = this.habits.find(h => h.id === habitId);
         if (habit) {
-            habit.timerDuration = Math.max(1, Math.min(3600, parseInt(newDuration) || 5));
+            habit.timerDuration = Math.min(3600, habit.timerDuration + 5);
+            this.saveAndUpdate();
+        }
+    }
+
+    decrementTimer(habitId) {
+        const habit = this.habits.find(h => h.id === habitId);
+        if (habit) {
+            habit.timerDuration = Math.max(5, habit.timerDuration - 5);
             this.saveAndUpdate();
         }
     }
