@@ -79,4 +79,20 @@ self.addEventListener('periodicsync', event => {
     if (event.tag === 'update-badge') {
         event.waitUntil(updateBadgeCount());
     }
+});
+
+self.addEventListener('notificationclick', function(event) {
+    event.notification.close();
+    
+    // Handle notification click
+    event.waitUntil(
+        clients.matchAll({
+            type: 'window'
+        }).then(function(clientList) {
+            if (clientList.length > 0) {
+                return clientList[0].focus();
+            }
+            return clients.openWindow('/');
+        })
+    );
 }); 

@@ -20,7 +20,7 @@
             "purpose": "any maskable"
         }
     ],
-    "permissions": ["notifications", "badges"],
+    "permissions": ["notifications"],
     "background_sync": true,
     "periodic_sync": {
         "update_badge": {
