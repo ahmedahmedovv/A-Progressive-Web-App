@@ -222,12 +222,21 @@ h1 {
 
 .timer-input {
     width: 60px;
-    padding: 4px 8px;
+    padding: 8px;
     border: 1px solid var(--surface);
     border-radius: var(--radius);
-    font-size: 14px;
+    font-size: 16px;
     color: var(--primary);
     background: var(--background);
+    -webkit-appearance: none;
+    -moz-appearance: textfield;
+    text-align: center;
+}
+
+.timer-input::-webkit-outer-spin-button,
+.timer-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
 }
 
 .timer-input:focus {

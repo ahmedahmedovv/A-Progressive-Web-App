@@ -134,6 +134,8 @@ class HabitTracker {
                                value="${habit.timerDuration}"
                                min="1"
                                max="3600"
+                               pattern="[0-9]*"
+                               inputmode="numeric"
                                onchange="habitTracker.updateTimerDuration(${habit.id}, this.value)">
                         <span class="timer-label">seconds</span>
                     </div>
