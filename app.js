@@ -7,126 +7,106 @@ class HabitTracker {
     init() {
         this.renderHabits();
         this.setupEventListeners();
-        this.updateStats();
-        this.displayCurrentDate();
+        this.updateProgress();
+        this.displayDate();
     }
 
-    displayCurrentDate() {
+    displayDate() {
         const dateDisplay = document.getElementById('currentDate');
-        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        const options = { weekday: 'long', month: 'long', day: 'numeric' };
         dateDisplay.textContent = new Date().toLocaleDateString(undefined, options);
     }
 
-    showNotification(message, type = 'success') {
-        const snackbar = document.getElementById('snackbar');
-        snackbar.className = `show ${type}`;
-        snackbar.textContent = message;
-        setTimeout(() => {
-            snackbar.className = snackbar.className.replace('show', '');
-        }, 3000);
-    }
-
     setupEventListeners() {
-        window.addHabit = () => {
-            const input = document.getElementById('habitInput');
-            const habitName = input.value.trim();
-            
-            if (habitName) {
-                this.habits.push({
-                    id: Date.now(),
-                    name: habitName,
-                    dates: {},
-                    streak: 0
-                });
-                this.saveHabits();
-                this.renderHabits();
-                input.value = '';
-            }
-        };
+        const input = document.getElementById('habitInput');
+        const addButton = document.querySelector('.add-button');
 
-        document.getElementById('habitInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                this.addHabit();
-            }
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.addHabit();
         });
+
+        addButton.addEventListener('click', () => this.addHabit());
     }
 
     addHabit() {
         const input = document.getElementById('habitInput');
-        const category = document.getElementById('habitCategory');
-        const habitName = input.value.trim();
+        const name = input.value.trim();
         
-        if (habitName) {
-            const newHabit = {
+        if (name) {
+            const habit = {
                 id: Date.now(),
-                name: habitName,
-                category: category.value,
+                name,
                 dates: {},
-                streak: 0,
-                created: new Date().toISOString()
+                streak: 0
             };
             
-            this.habits.unshift(newHabit); // Add to beginning of array
-            this.saveHabits();
-            this.renderHabits();
-            this.updateStats();
+            this.habits.unshift(habit);
+            this.saveAndUpdate();
             input.value = '';
-            this.showNotification('Habit added successfully!');
+            this.showNotification('Habit added');
         }
     }
 
-    updateStats() {
-        const totalHabits = document.getElementById('totalHabits');
-        const completedToday = document.getElementById('completedToday');
-        
-        totalHabits.textContent = this.habits.length;
-        
+    toggleHabit(id) {
+        const habit = this.habits.find(h => h.id === id);
         const today = new Date().toDateString();
-        const completed = this.habits.filter(habit => habit.dates[today]).length;
-        completedToday.textContent = `${completed}/${this.habits.length}`;
+        
+        if (habit) {
+            habit.dates[today] ? delete habit.dates[today] : habit.dates[today] = true;
+            this.updateStreak(habit);
+            this.saveAndUpdate();
+        }
+    }
+
+    updateStreak(habit) {
+        let streak = 0;
+        let currentDate = new Date();
+        
+        while (habit.dates[currentDate.toDateString()]) {
+            streak++;
+            currentDate.setDate(currentDate.getDate() - 1);
+        }
+        
+        habit.streak = streak;
+    }
+
+    updateProgress() {
+        const today = new Date().toDateString();
+        const completed = this.habits.filter(h => h.dates[today]).length;
+        const total = this.habits.length;
+        
+        document.getElementById('completedToday').textContent = `${completed}/${total}`;
+        document.getElementById('progressBar').style.width = total ? `${(completed/total) * 100}%` : '0%';
     }
 
     renderHabits() {
         const habitsList = document.getElementById('habitsList');
-        habitsList.innerHTML = '';
-
-        if (this.habits.length === 0) {
-            habitsList.innerHTML = `
-                <div class="empty-state animate__animated animate__fadeIn">
-                    <p>No habits added yet. Start by adding a new habit above!</p>
-                </div>
-            `;
-            return;
-        }
-
-        this.habits.forEach((habit, index) => {
-            const today = new Date().toDateString();
-            const isChecked = habit.dates[today] ? 'checked' : '';
-            
-            const habitElement = document.createElement('div');
-            habitElement.className = 'habit-item animate__animated animate__fadeIn';
-            habitElement.style.animationDelay = `${index * 0.1}s`;
-            
-            habitElement.innerHTML = `
+        const today = new Date().toDateString();
+        
+        habitsList.innerHTML = this.habits.length ? this.habits.map(habit => `
+            <div class="habit-item" data-id="${habit.id}">
                 <div class="habit-info">
-                    <h3>${habit.name}</h3>
-                    <span class="habit-category">${habit.category}</span>
-                    <span class="streak">🔥 ${habit.streak} day streak</span>
+                    <div class="habit-name">${habit.name}</div>
+                    ${habit.streak > 0 ? `<div class="streak">${habit.streak} day streak</div>` : ''}
                 </div>
-                <label class="checkbox">
-                    <input type="checkbox" ${isChecked}
-                        onclick="habitTracker.toggleDate(${habit.id}, '${today}')">
-                    <span class="checkmark"></span>
-                </label>
-            `;
-            
-            habitsList.appendChild(habitElement);
-        });
+                <div class="checkbox ${habit.dates[today] ? 'checked' : ''}"
+                     onclick="habitTracker.toggleHabit(${habit.id})"></div>
+            </div>
+        `).join('') : '<div class="empty-state">Add your first habit</div>';
     }
 
-    saveHabits() {
+    saveAndUpdate() {
         localStorage.setItem('habits', JSON.stringify(this.habits));
+        this.renderHabits();
+        this.updateProgress();
+    }
+
+    showNotification(message) {
+        const snackbar = document.getElementById('snackbar');
+        snackbar.textContent = message;
+        snackbar.classList.add('show');
+        setTimeout(() => snackbar.classList.remove('show'), 2000);
     }
 }
 
-const habitTracker = new HabitTracker(); 
+window.habitTracker = new HabitTracker(); 

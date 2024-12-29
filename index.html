@@ -3,60 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Habit Tracker PWA</title>
+    <title>Minimal Habits</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#2196F3">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <meta name="theme-color" content="#000000">
 </head>
 <body>
     <div class="container">
-        <header class="app-header">
-            <h1>Daily Habits</h1>
-            <div class="date-display" id="currentDate"></div>
+        <header>
+            <h1>today</h1>
+            <div id="currentDate"></div>
         </header>
-        
-        <div class="habit-form animate__animated animate__fadeIn">
-            <input type="text" id="habitInput" placeholder="Enter new habit">
-            <select id="habitCategory">
-                <option value="health">Health</option>
-                <option value="productivity">Productivity</option>
-                <option value="mindfulness">Mindfulness</option>
-                <option value="other">Other</option>
-            </select>
-            <button onclick="addHabit()" class="add-button">
-                <span class="button-text">Add Habit</span>
-                <span class="icon">+</span>
-            </button>
+
+        <div class="quick-add">
+            <input type="text" id="habitInput" placeholder="Add a new habit">
+            <button class="add-button" aria-label="Add habit">+</button>
         </div>
 
-        <div class="stats-container">
-            <div class="stat-card">
-                <span class="stat-label">Total Habits</span>
-                <span class="stat-value" id="totalHabits">0</span>
-            </div>
-            <div class="stat-card">
-                <span class="stat-label">Completed Today</span>
-                <span class="stat-value" id="completedToday">0</span>
-            </div>
+        <div class="progress-bar">
+            <div class="progress" id="progressBar"></div>
+            <span class="progress-text" id="completedToday">0/0</span>
         </div>
 
-        <div class="habits-list" id="habitsList">
-            <!-- Habits will be inserted here -->
-        </div>
+        <div class="habits-list" id="habitsList"></div>
     </div>
 
     <div id="snackbar"></div>
-
     <script src="app.js"></script>
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
-                    .then(reg => console.log('Service Worker registered'))
-                    .catch(err => console.log('Service Worker not registered', err));
-            });
-        }
-    </script>
 </body>
 </html> 
