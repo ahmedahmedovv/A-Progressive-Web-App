@@ -7,6 +7,23 @@ class HabitTracker {
     init() {
         this.renderHabits();
         this.setupEventListeners();
+        this.updateStats();
+        this.displayCurrentDate();
+    }
+
+    displayCurrentDate() {
+        const dateDisplay = document.getElementById('currentDate');
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        dateDisplay.textContent = new Date().toLocaleDateString(undefined, options);
+    }
+
+    showNotification(message, type = 'success') {
+        const snackbar = document.getElementById('snackbar');
+        snackbar.className = `show ${type}`;
+        snackbar.textContent = message;
+        setTimeout(() => {
+            snackbar.className = snackbar.className.replace('show', '');
+        }, 3000);
     }
 
     setupEventListeners() {
@@ -26,49 +43,75 @@ class HabitTracker {
                 input.value = '';
             }
         };
+
+        document.getElementById('habitInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                this.addHabit();
+            }
+        });
     }
 
-    toggleDate(habitId, date) {
-        const habit = this.habits.find(h => h.id === habitId);
-        if (habit) {
-            if (habit.dates[date]) {
-                delete habit.dates[date];
-            } else {
-                habit.dates[date] = true;
-            }
-            this.updateStreak(habit);
+    addHabit() {
+        const input = document.getElementById('habitInput');
+        const category = document.getElementById('habitCategory');
+        const habitName = input.value.trim();
+        
+        if (habitName) {
+            const newHabit = {
+                id: Date.now(),
+                name: habitName,
+                category: category.value,
+                dates: {},
+                streak: 0,
+                created: new Date().toISOString()
+            };
+            
+            this.habits.unshift(newHabit); // Add to beginning of array
             this.saveHabits();
             this.renderHabits();
+            this.updateStats();
+            input.value = '';
+            this.showNotification('Habit added successfully!');
         }
     }
 
-    updateStreak(habit) {
-        let streak = 0;
-        const today = new Date();
-        let currentDate = new Date();
-
-        while (habit.dates[currentDate.toDateString()]) {
-            streak++;
-            currentDate.setDate(currentDate.getDate() - 1);
-        }
+    updateStats() {
+        const totalHabits = document.getElementById('totalHabits');
+        const completedToday = document.getElementById('completedToday');
         
-        habit.streak = streak;
+        totalHabits.textContent = this.habits.length;
+        
+        const today = new Date().toDateString();
+        const completed = this.habits.filter(habit => habit.dates[today]).length;
+        completedToday.textContent = `${completed}/${this.habits.length}`;
     }
 
     renderHabits() {
         const habitsList = document.getElementById('habitsList');
         habitsList.innerHTML = '';
 
-        this.habits.forEach(habit => {
+        if (this.habits.length === 0) {
+            habitsList.innerHTML = `
+                <div class="empty-state animate__animated animate__fadeIn">
+                    <p>No habits added yet. Start by adding a new habit above!</p>
+                </div>
+            `;
+            return;
+        }
+
+        this.habits.forEach((habit, index) => {
             const today = new Date().toDateString();
             const isChecked = habit.dates[today] ? 'checked' : '';
             
             const habitElement = document.createElement('div');
-            habitElement.className = 'habit-item';
+            habitElement.className = 'habit-item animate__animated animate__fadeIn';
+            habitElement.style.animationDelay = `${index * 0.1}s`;
+            
             habitElement.innerHTML = `
                 <div class="habit-info">
                     <h3>${habit.name}</h3>
-                    <span class="streak">🔥 ${habit.streak} days</span>
+                    <span class="habit-category">${habit.category}</span>
+                    <span class="streak">🔥 ${habit.streak} day streak</span>
                 </div>
                 <label class="checkbox">
                     <input type="checkbox" ${isChecked}
@@ -76,6 +119,7 @@ class HabitTracker {
                     <span class="checkmark"></span>
                 </label>
             `;
+            
             habitsList.appendChild(habitElement);
         });
     }

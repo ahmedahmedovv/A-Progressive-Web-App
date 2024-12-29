@@ -7,20 +7,46 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2196F3">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
 </head>
 <body>
     <div class="container">
-        <h1>Daily Habits</h1>
+        <header class="app-header">
+            <h1>Daily Habits</h1>
+            <div class="date-display" id="currentDate"></div>
+        </header>
         
-        <div class="habit-form">
+        <div class="habit-form animate__animated animate__fadeIn">
             <input type="text" id="habitInput" placeholder="Enter new habit">
-            <button onclick="addHabit()">Add Habit</button>
+            <select id="habitCategory">
+                <option value="health">Health</option>
+                <option value="productivity">Productivity</option>
+                <option value="mindfulness">Mindfulness</option>
+                <option value="other">Other</option>
+            </select>
+            <button onclick="addHabit()" class="add-button">
+                <span class="button-text">Add Habit</span>
+                <span class="icon">+</span>
+            </button>
+        </div>
+
+        <div class="stats-container">
+            <div class="stat-card">
+                <span class="stat-label">Total Habits</span>
+                <span class="stat-value" id="totalHabits">0</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Completed Today</span>
+                <span class="stat-value" id="completedToday">0</span>
+            </div>
         </div>
 
         <div class="habits-list" id="habitsList">
             <!-- Habits will be inserted here -->
         </div>
     </div>
+
+    <div id="snackbar"></div>
 
     <script src="app.js"></script>
     <script>
