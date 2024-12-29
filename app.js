@@ -2,6 +2,7 @@ class HabitTracker {
     constructor() {
         this.habits = JSON.parse(localStorage.getItem('habits')) || [];
         this.activeTimers = new Map();
+        this.timerSound = new Audio('./sounds/timer-end.mp3');
         this.init();
     }
 
@@ -155,33 +156,7 @@ class HabitTracker {
     }
 
     startTimer(habitId) {
-        // Show a prompt to open system timer
-        const shouldOpenTimer = confirm('Would you like to set a 1-minute timer in your Clock app?');
-        
-        if (shouldOpenTimer) {
-            // Try different deep link formats for iOS timer
-            const timerLinks = [
-                'shortcuts://x-callback-url/run-shortcut?name=Set1MinuteTimer',
-                'clock:///timer',
-                'clock:timer',
-                'clock://',
-                'clock://timer'
-            ];
-
-            // Try each link format
-            const tryNextLink = (index) => {
-                if (index < timerLinks.length) {
-                    setTimeout(() => {
-                        window.location.href = timerLinks[index];
-                    }, 100);
-                }
-            };
-
-            tryNextLink(0);
-        }
-        
-        // Continue with visual timer in the app
-        const timerDuration = 60; // 1 minute in seconds
+        const timerDuration = 5; // 5 seconds
         let timeLeft = timerDuration;
         
         const timer = setInterval(() => {
@@ -190,7 +165,13 @@ class HabitTracker {
             
             if (timeLeft <= 0) {
                 this.stopTimer(habitId);
-                this.showNotification('Timer completed!');
+                try {
+                    this.timerSound.play().catch(error => {
+                        console.log('Could not play sound:', error);
+                    });
+                } catch (error) {
+                    console.log('Sound playback error:', error);
+                }
             }
         }, 1000);
         
