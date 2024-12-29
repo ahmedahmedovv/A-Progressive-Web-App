@@ -34,6 +34,7 @@ body {
 
 header {
     margin-bottom: 32px;
+    animation: fadeIn 0.5s ease;
 }
 
 h1 {
@@ -51,6 +52,7 @@ h1 {
     display: flex;
     gap: 12px;
     margin-bottom: 24px;
+    animation: slideUp 0.5s ease;
 }
 
 #habitInput {
@@ -59,12 +61,14 @@ h1 {
     border: 2px solid var(--surface);
     border-radius: var(--radius);
     font-size: 16px;
-    transition: border-color 0.2s ease;
+    transition: all 0.2s ease;
+    background: var(--surface);
 }
 
 #habitInput:focus {
     outline: none;
     border-color: var(--accent);
+    background: var(--background);
 }
 
 .add-button {
@@ -76,26 +80,30 @@ h1 {
     border: none;
     font-size: 24px;
     cursor: pointer;
-    transition: transform 0.2s ease;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 102, 255, 0.2);
 }
 
 .add-button:active {
     transform: scale(0.95);
+    box-shadow: 0 1px 4px rgba(0, 102, 255, 0.2);
 }
 
 .progress-bar {
     background: var(--surface);
-    height: 4px;
-    border-radius: 2px;
+    height: 6px;
+    border-radius: 3px;
     margin-bottom: 32px;
     position: relative;
+    animation: fadeIn 0.5s ease;
 }
 
 .progress {
     background: var(--accent);
     height: 100%;
-    border-radius: 2px;
+    border-radius: 3px;
     transition: width 0.3s ease;
+    box-shadow: 0 0 10px rgba(0, 102, 255, 0.2);
 }
 
 .progress-text {
@@ -113,8 +121,14 @@ h1 {
     background: var(--surface);
     border-radius: var(--radius);
     margin-bottom: 12px;
-    transition: transform 0.2s ease;
+    transition: all 0.2s ease;
     position: relative;
+    animation: slideUp 0.5s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.habit-item:active {
+    transform: scale(0.99);
 }
 
 .habit-info {
@@ -124,7 +138,7 @@ h1 {
 
 .habit-name {
     font-size: 16px;
-    font-weight: 500;
+    font-weight: 600;
 }
 
 .streak {
@@ -139,85 +153,33 @@ h1 {
     border: 2px solid var(--secondary);
     border-radius: 50%;
     transition: all 0.2s ease;
+    position: relative;
 }
 
 .checkbox.checked {
     background: var(--success);
     border-color: var(--success);
+    box-shadow: 0 0 10px rgba(0, 200, 83, 0.2);
 }
 
-#snackbar {
-    position: fixed;
-    bottom: 32px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--primary);
-    color: white;
-    padding: 12px 24px;
-    border-radius: 24px;
-    font-size: 14px;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-#snackbar.show {
-    opacity: 1;
-}
-
-@media (prefers-color-scheme: dark) {
-    :root {
-        --background: #000000;
-        --surface: #1c1c1e;
-        --primary: #ffffff;
-        --secondary: #8e8e93;
-    }
-}
-
-.badge {
+.checkbox.checked::after {
+    content: '';
     position: absolute;
-    left: -8px;
+    left: 50%;
     top: 50%;
-    transform: translateY(-50%);
-    width: 4px;
-    height: 4px;
+    transform: translate(-50%, -50%);
+    width: 12px;
+    height: 12px;
+    background: white;
     border-radius: 50%;
-    background: var(--error);
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-    0% {
-        transform: translateY(-50%) scale(1);
-        opacity: 1;
-    }
-    50% {
-        transform: translateY(-50%) scale(1.5);
-        opacity: 0.5;
-    }
-    100% {
-        transform: translateY(-50%) scale(1);
-        opacity: 1;
-    }
-}
-
-.habit-item:hover .badge {
-    animation: none;
-    transform: translateY(-50%) scale(1.5);
-}
-
-.timer {
-    font-size: 14px;
-    color: var(--accent);
-    margin-top: 4px;
-    font-weight: 500;
-    font-family: monospace;
 }
 
 .timer-settings {
+    margin-top: 8px;
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-top: 8px;
+    gap: 12px;
+    padding: 8px 0;
 }
 
 .timer-btn {
@@ -225,19 +187,20 @@ h1 {
     height: 32px;
     border-radius: 50%;
     border: none;
-    background: var(--surface);
+    background: var(--background);
     color: var(--primary);
     font-size: 18px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: transform 0.2s ease;
-    -webkit-tap-highlight-color: transparent;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .timer-btn:active {
     transform: scale(0.95);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
 }
 
 .timer-display {
@@ -249,7 +212,7 @@ h1 {
 
 .timer-value {
     font-size: 16px;
-    font-weight: 500;
+    font-weight: 600;
     color: var(--primary);
 }
 
@@ -259,21 +222,53 @@ h1 {
     margin-top: 2px;
 }
 
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --background: #000000;
+        --surface: #1c1c1e;
+        --primary: #ffffff;
+        --secondary: #8e8e93;
+    }
+}
+
 .install-button {
     display: block;
     width: 100%;
-    padding: 12px;
-    margin-bottom: 16px;
+    padding: 14px;
+    margin-bottom: 20px;
     background: var(--accent);
     color: white;
     border: none;
     border-radius: var(--radius);
     font-size: 16px;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
-    transition: transform 0.2s ease;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 102, 255, 0.2);
+    animation: slideUp 0.5s ease;
 }
 
 .install-button:active {
     transform: scale(0.98);
+    box-shadow: 0 1px 4px rgba(0, 102, 255, 0.2);
 } 
