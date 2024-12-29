@@ -3,6 +3,20 @@ class HabitTracker {
         this.habits = JSON.parse(localStorage.getItem('habits')) || [];
         this.activeTimers = new Map();
         this.timerSound = new Audio('./sounds/timer-end.mp3');
+        this.timerSound.preload = 'auto';
+        this.timerSound.load();
+        
+        // Pre-load audio on first user interaction
+        document.addEventListener('touchstart', () => {
+            this.timerSound.load();
+            this.timerSound.play().then(() => {
+                this.timerSound.pause();
+                this.timerSound.currentTime = 0;
+            }).catch(error => {
+                console.log('Audio pre-load failed:', error);
+            });
+        }, { once: true });
+        
         this.init();
     }
 
@@ -165,13 +179,22 @@ class HabitTracker {
             
             if (timeLeft <= 0) {
                 this.stopTimer(habitId);
-                try {
-                    this.timerSound.play().catch(error => {
-                        console.log('Could not play sound:', error);
-                    });
-                } catch (error) {
-                    console.log('Sound playback error:', error);
-                }
+                // More robust sound playing
+                const playSound = async () => {
+                    try {
+                        await this.timerSound.play();
+                    } catch (error) {
+                        console.log('Sound playback error:', error);
+                        // Fallback: try to create and play a new Audio instance
+                        try {
+                            const fallbackSound = new Audio('./sounds/timer-end.mp3');
+                            await fallbackSound.play();
+                        } catch (fallbackError) {
+                            console.log('Fallback sound failed:', fallbackError);
+                        }
+                    }
+                };
+                playSound();
             }
         }, 1000);
         
