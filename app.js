@@ -155,6 +155,32 @@ class HabitTracker {
     }
 
     startTimer(habitId) {
+        // Show a prompt to open system timer
+        const shouldOpenTimer = confirm('Would you like to set a 1-minute timer in your Clock app?');
+        
+        if (shouldOpenTimer) {
+            // Try different deep link formats for iOS timer
+            const timerLinks = [
+                'shortcuts://x-callback-url/run-shortcut?name=Set1MinuteTimer',
+                'clock:///timer',
+                'clock:timer',
+                'clock://',
+                'clock://timer'
+            ];
+
+            // Try each link format
+            const tryNextLink = (index) => {
+                if (index < timerLinks.length) {
+                    setTimeout(() => {
+                        window.location.href = timerLinks[index];
+                    }, 100);
+                }
+            };
+
+            tryNextLink(0);
+        }
+        
+        // Continue with visual timer in the app
         const timerDuration = 60; // 1 minute in seconds
         let timeLeft = timerDuration;
         
@@ -165,15 +191,6 @@ class HabitTracker {
             if (timeLeft <= 0) {
                 this.stopTimer(habitId);
                 this.showNotification('Timer completed!');
-                
-                // Play system notification sound
-                try {
-                    // Try to play the iOS system sound
-                    const audio = new Audio('data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//tQwAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAADAAAGhgBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVWqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqr///////////////////////////////////////////8AAAAATGF2YzU4LjU0AAAAAAAAAAAAAAAAJAAAAAAAAAAAAYbUjKJGAAAAAAAAAAAAAAAAAAAA//tQxAAB8AAAf4AAAAwAAAP8AAAABAQB/+kAwHg5IAmBkBA/g+D4Pg+/8QBBDg+D4f/BAQEAQB8HwfBAEP/B8H3/BAEAQDgPg++D4Pg+D7/wQBAEP//+D4f/ggCAP//B/KAgCAIB8Hz//BAMQBgAIAhiGIYgCv/7UsQBgfAAAf4AAAAwAAAP8AAAAEYgiGIYh/EQTBMEwTBM/EQTBMEQRDEEQTBM/8RBEUT//EQTBMEwTBEEz/xEEwTBMEQTBE/8RBMEQTBMEQTBM/8RBMEQTBMEQTBM/8RBMEQTBMEQTBE//tSxAID8AAAf4AAAAwAAAP8AAAATP/EQTBMEQTBMEQTP/EQTBMEQTBMEQTP/EQTBMEQTBMEQTP/EQTBMEQTBMEQTP/EQTBMEQTBMEQTP/EQTBMEQTBMEQTP/EQTBMEQTBMEQTP/EQTBMEwTBMEQTBE//tQxAKB8AAAf4AAAAwAAAP8AAAAQAgAIAhiGIYhiAK8RBMEwTBMEwTP/EQTBMEQRDEEQTBM/8RBFFP/xEEwTBMEwRBM/8RBMEwTBEEwRP/EQTBMEQTBMEQTP/EQTBMEQTBMEQT');
-                    audio.play();
-                } catch (error) {
-                    console.log('Could not play notification sound:', error);
-                }
             }
         }, 1000);
         
