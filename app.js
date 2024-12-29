@@ -57,7 +57,8 @@ class HabitTracker {
                 id: Date.now(),
                 name,
                 dates: {},
-                streak: 0
+                streak: 0,
+                timerDuration: 5 // default duration in seconds
             };
             
             this.habits.unshift(habit);
@@ -127,6 +128,15 @@ class HabitTracker {
                 <div class="habit-info">
                     <div class="habit-name">${habit.name}</div>
                     ${habit.streak > 0 ? `<div class="streak">${habit.streak} day streak</div>` : ''}
+                    <div class="timer-settings">
+                        <input type="number" 
+                               class="timer-input" 
+                               value="${habit.timerDuration}"
+                               min="1"
+                               max="3600"
+                               onchange="habitTracker.updateTimerDuration(${habit.id}, this.value)">
+                        <span class="timer-label">seconds</span>
+                    </div>
                 </div>
                 <div class="checkbox ${habit.dates[today] ? 'checked' : ''}"
                      onclick="habitTracker.toggleHabit(${habit.id})"></div>
@@ -170,7 +180,10 @@ class HabitTracker {
     }
 
     startTimer(habitId) {
-        const timerDuration = 5; // 5 seconds
+        const habit = this.habits.find(h => h.id === habitId);
+        if (!habit) return;
+
+        const timerDuration = habit.timerDuration; // Use habit-specific duration
         let timeLeft = timerDuration;
         
         const timer = setInterval(() => {
@@ -179,13 +192,11 @@ class HabitTracker {
             
             if (timeLeft <= 0) {
                 this.stopTimer(habitId);
-                // More robust sound playing
                 const playSound = async () => {
                     try {
                         await this.timerSound.play();
                     } catch (error) {
                         console.log('Sound playback error:', error);
-                        // Fallback: try to create and play a new Audio instance
                         try {
                             const fallbackSound = new Audio('./sounds/timer-end.mp3');
                             await fallbackSound.play();
@@ -229,6 +240,14 @@ class HabitTracker {
                 const remainingSeconds = seconds % 60;
                 timerElement.textContent = `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
             }
+        }
+    }
+
+    updateTimerDuration(habitId, newDuration) {
+        const habit = this.habits.find(h => h.id === habitId);
+        if (habit) {
+            habit.timerDuration = Math.max(1, Math.min(3600, parseInt(newDuration) || 5));
+            this.saveAndUpdate();
         }
     }
 }
