@@ -149,10 +149,9 @@ class HabitTracker {
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', async () => {
         try {
-            const registration = await navigator.serviceWorker.register('/sw.js');
+            const registration = await navigator.serviceWorker.register('./sw.js');
             console.log('ServiceWorker registration successful');
             
-            // Request initial badge sync
             if ('sync' in registration) {
                 await registration.sync.register('update-badge');
             }
