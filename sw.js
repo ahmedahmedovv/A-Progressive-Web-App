@@ -40,4 +40,41 @@ self.addEventListener('fetch', event => {
                 return response || fetch(event.request);
             })
     );
+});
+
+// Improved badge update handling
+self.addEventListener('sync', event => {
+    if (event.tag === 'update-badge') {
+        event.waitUntil(updateBadgeCount());
+    }
+});
+
+async function updateBadgeCount() {
+    try {
+        // Get habits from localStorage instead of cache
+        const habits = JSON.parse(localStorage.getItem('habits')) || [];
+        const today = new Date().toDateString();
+        const uncompleted = habits.filter(h => !h.dates[today]).length;
+        
+        if ('ExperimentalBadge' in self) {
+            // Chrome implementation
+            await self.ExperimentalBadge.set(uncompleted);
+        } else if ('setAppBadge' in navigator) {
+            // Standard implementation
+            if (uncompleted > 0) {
+                await navigator.setAppBadge(uncompleted);
+            } else {
+                await navigator.clearAppBadge();
+            }
+        }
+    } catch (error) {
+        console.error('Error updating badge:', error);
+    }
+}
+
+// Add periodic badge updates
+self.addEventListener('periodicsync', event => {
+    if (event.tag === 'update-badge') {
+        event.waitUntil(updateBadgeCount());
+    }
 }); 

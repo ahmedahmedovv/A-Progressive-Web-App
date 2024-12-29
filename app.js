@@ -9,6 +9,10 @@ class HabitTracker {
         this.setupEventListeners();
         this.updateProgress();
         this.displayDate();
+        this.updateAppBadge();
+        
+        // Set up periodic badge updates
+        setInterval(() => this.updateAppBadge(), 60000); // Update every minute
     }
 
     displayDate() {
@@ -55,6 +59,15 @@ class HabitTracker {
             habit.dates[today] ? delete habit.dates[today] : habit.dates[today] = true;
             this.updateStreak(habit);
             this.saveAndUpdate();
+            
+            // Request background sync for badge update
+            if ('serviceWorker' in navigator && 'sync' in registration) {
+                navigator.serviceWorker.ready.then(registration => {
+                    registration.sync.register('update-badge');
+                });
+            } else {
+                this.updateAppBadge();
+            }
         }
     }
 
@@ -85,6 +98,7 @@ class HabitTracker {
         
         habitsList.innerHTML = this.habits.length ? this.habits.map(habit => `
             <div class="habit-item" data-id="${habit.id}">
+                ${!habit.dates[today] ? '<div class="badge"></div>' : ''}
                 <div class="habit-info">
                     <div class="habit-name">${habit.name}</div>
                     ${habit.streak > 0 ? `<div class="streak">${habit.streak} day streak</div>` : ''}
@@ -99,6 +113,7 @@ class HabitTracker {
         localStorage.setItem('habits', JSON.stringify(this.habits));
         this.renderHabits();
         this.updateProgress();
+        this.updateAppBadge();
     }
 
     showNotification(message) {
@@ -107,6 +122,44 @@ class HabitTracker {
         snackbar.classList.add('show');
         setTimeout(() => snackbar.classList.remove('show'), 2000);
     }
+
+    async updateAppBadge() {
+        try {
+            const today = new Date().toDateString();
+            const uncompleted = this.habits.filter(h => !h.dates[today]).length;
+            
+            if ('ExperimentalBadge' in window) {
+                // Chrome implementation
+                await window.ExperimentalBadge.set(uncompleted);
+            } else if ('setAppBadge' in navigator) {
+                // Standard implementation
+                if (uncompleted > 0) {
+                    await navigator.setAppBadge(uncompleted);
+                } else {
+                    await navigator.clearAppBadge();
+                }
+            }
+        } catch (error) {
+            console.log('Badge update failed:', error);
+        }
+    }
+}
+
+// Register service worker with proper error handling
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', async () => {
+        try {
+            const registration = await navigator.serviceWorker.register('/sw.js');
+            console.log('ServiceWorker registration successful');
+            
+            // Request initial badge sync
+            if ('sync' in registration) {
+                await registration.sync.register('update-badge');
+            }
+        } catch (err) {
+            console.log('ServiceWorker registration failed: ', err);
+        }
+    });
 }
 
 window.habitTracker = new HabitTracker(); 
