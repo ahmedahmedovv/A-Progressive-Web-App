@@ -1,312 +1,264 @@
-class HabitTracker {
-    constructor() {
-        this.habits = JSON.parse(localStorage.getItem('habits')) || [];
-        this.activeTimers = new Map();
-        this.timerSound = new Audio('./sounds/timer-end.mp3');
-        this.timerSound.preload = 'auto';
-        this.timerSound.load();
-        
-        // Pre-load audio on first user interaction
-        document.addEventListener('touchstart', () => {
-            this.timerSound.load();
-            this.timerSound.play().then(() => {
-                this.timerSound.pause();
-                this.timerSound.currentTime = 0;
-            }).catch(error => {
-                console.log('Audio pre-load failed:', error);
-            });
-        }, { once: true });
-        
-        // Add to Home Screen prompt
-        this.deferredPrompt = null;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            // Prevent Chrome 67 and earlier from automatically showing the prompt
-            e.preventDefault();
-            // Stash the event so it can be triggered later
-            this.deferredPrompt = e;
-            // Show the install button
-            this.showInstallButton();
+let habits = [];
+
+// Load habits from localStorage
+function loadHabits() {
+    const savedHabits = localStorage.getItem('habits');
+    habits = savedHabits ? JSON.parse(savedHabits) : [];
+    displayHabits();
+}
+
+// Save habits to localStorage
+function saveHabits() {
+    localStorage.setItem('habits', JSON.stringify(habits));
+}
+
+// Add new habit
+function addHabit() {
+    const input = document.getElementById('habitInput');
+    const habitName = input.value.trim();
+    
+    if (habitName) {
+        habits.push({
+            name: habitName,
+            completed: false,
+            date: new Date().toISOString().split('T')[0],
+            timer: 5, // Changed default timer from 60 to 5 seconds
+            isRunning: false,
+            remainingTime: 5 // Changed default remaining time to 5 seconds
         });
-        
-        this.init();
-    }
-
-    init() {
-        this.renderHabits();
-        this.setupEventListeners();
-        this.updateProgress();
-        this.displayDate();
-        this.updateAppBadge();
-        
-        // Set up periodic badge updates
-        setInterval(() => this.updateAppBadge(), 60000); // Update every minute
-    }
-
-    displayDate() {
-        const dateDisplay = document.getElementById('currentDate');
-        const options = { weekday: 'long', month: 'long', day: 'numeric' };
-        dateDisplay.textContent = new Date().toLocaleDateString(undefined, options);
-    }
-
-    setupEventListeners() {
-        const input = document.getElementById('habitInput');
-        const addButton = document.querySelector('.add-button');
-
-        input.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') this.addHabit();
-        });
-
-        addButton.addEventListener('click', () => this.addHabit());
-    }
-
-    addHabit() {
-        const input = document.getElementById('habitInput');
-        const name = input.value.trim();
-        
-        if (name) {
-            const habit = {
-                id: Date.now(),
-                name,
-                dates: {},
-                streak: 0,
-                timerDuration: 5 // default duration in seconds
-            };
-            
-            this.habits.unshift(habit);
-            this.saveAndUpdate();
-            input.value = '';
-            this.showNotification('Habit added');
-        }
-    }
-
-    toggleHabit(id) {
-        const habit = this.habits.find(h => h.id === id);
-        const today = new Date().toDateString();
-        
-        if (habit) {
-            if (habit.dates[today]) {
-                // If unchecking
-                delete habit.dates[today];
-                this.stopTimer(id);
-            } else {
-                // If checking
-                habit.dates[today] = true;
-                this.startTimer(id);
-            }
-            
-            this.updateStreak(habit);
-            this.saveAndUpdate();
-            
-            // Request background sync for badge update
-            if ('serviceWorker' in navigator && 'sync' in registration) {
-                navigator.serviceWorker.ready.then(registration => {
-                    registration.sync.register('update-badge');
-                });
-            } else {
-                this.updateAppBadge();
-            }
-        }
-    }
-
-    updateStreak(habit) {
-        let streak = 0;
-        let currentDate = new Date();
-        
-        while (habit.dates[currentDate.toDateString()]) {
-            streak++;
-            currentDate.setDate(currentDate.getDate() - 1);
-        }
-        
-        habit.streak = streak;
-    }
-
-    updateProgress() {
-        const today = new Date().toDateString();
-        const completed = this.habits.filter(h => h.dates[today]).length;
-        const total = this.habits.length;
-        
-        document.getElementById('completedToday').textContent = `${completed}/${total}`;
-        document.getElementById('progressBar').style.width = total ? `${(completed/total) * 100}%` : '0%';
-    }
-
-    renderHabits() {
-        const habitsList = document.getElementById('habitsList');
-        const today = new Date().toDateString();
-        
-        habitsList.innerHTML = this.habits.length ? this.habits.map(habit => `
-            <div class="habit-item" data-id="${habit.id}">
-                ${!habit.dates[today] ? '<div class="badge"></div>' : ''}
-                <div class="habit-info">
-                    <div class="habit-name">${habit.name}</div>
-                    ${habit.streak > 0 ? `<div class="streak">${habit.streak} day streak</div>` : ''}
-                    <div class="timer-settings">
-                        <button class="timer-btn" onclick="habitTracker.decrementTimer(${habit.id})">-</button>
-                        <div class="timer-display">
-                            <span class="timer-value">${habit.timerDuration}</span>
-                            <span class="timer-label">seconds</span>
-                        </div>
-                        <button class="timer-btn" onclick="habitTracker.incrementTimer(${habit.id})">+</button>
-                    </div>
-                </div>
-                <div class="checkbox ${habit.dates[today] ? 'checked' : ''}"
-                     onclick="habitTracker.toggleHabit(${habit.id})"></div>
-            </div>
-        `).join('') : '<div class="empty-state">Add your first habit</div>';
-    }
-
-    saveAndUpdate() {
-        localStorage.setItem('habits', JSON.stringify(this.habits));
-        this.renderHabits();
-        this.updateProgress();
-        this.updateAppBadge();
-    }
-
-    showNotification(message) {
-        const snackbar = document.getElementById('snackbar');
-        snackbar.textContent = message;
-        snackbar.classList.add('show');
-        setTimeout(() => snackbar.classList.remove('show'), 2000);
-    }
-
-    async updateAppBadge() {
-        try {
-            const today = new Date().toDateString();
-            const uncompleted = this.habits.filter(h => !h.dates[today]).length;
-            
-            if ('ExperimentalBadge' in window) {
-                // Chrome implementation
-                await window.ExperimentalBadge.set(uncompleted);
-            } else if ('setAppBadge' in navigator) {
-                // Standard implementation
-                if (uncompleted > 0) {
-                    await navigator.setAppBadge(uncompleted);
-                } else {
-                    await navigator.clearAppBadge();
-                }
-            }
-        } catch (error) {
-            console.log('Badge update failed:', error);
-        }
-    }
-
-    startTimer(habitId) {
-        const habit = this.habits.find(h => h.id === habitId);
-        if (!habit) return;
-
-        const timerDuration = habit.timerDuration; // Use habit-specific duration
-        let timeLeft = timerDuration;
-        
-        const timer = setInterval(() => {
-            timeLeft--;
-            this.updateTimerDisplay(habitId, timeLeft);
-            
-            if (timeLeft <= 0) {
-                this.stopTimer(habitId);
-                const playSound = async () => {
-                    try {
-                        await this.timerSound.play();
-                    } catch (error) {
-                        console.log('Sound playback error:', error);
-                        try {
-                            const fallbackSound = new Audio('./sounds/timer-end.mp3');
-                            await fallbackSound.play();
-                        } catch (fallbackError) {
-                            console.log('Fallback sound failed:', fallbackError);
-                        }
-                    }
-                };
-                playSound();
-            }
-        }, 1000);
-        
-        this.activeTimers.set(habitId, timer);
-        this.updateTimerDisplay(habitId, timerDuration);
-    }
-
-    stopTimer(habitId) {
-        if (this.activeTimers.has(habitId)) {
-            clearInterval(this.activeTimers.get(habitId));
-            this.activeTimers.delete(habitId);
-            this.updateTimerDisplay(habitId, null);
-        }
-    }
-
-    updateTimerDisplay(habitId, seconds) {
-        const habitElement = document.querySelector(`.habit-item[data-id="${habitId}"]`);
-        if (!habitElement) return;
-        
-        let timerElement = habitElement.querySelector('.timer');
-        if (!timerElement && seconds !== null) {
-            timerElement = document.createElement('div');
-            timerElement.className = 'timer';
-            habitElement.querySelector('.habit-info').appendChild(timerElement);
-        }
-        
-        if (timerElement) {
-            if (seconds === null) {
-                timerElement.remove();
-            } else {
-                const minutes = Math.floor(seconds / 60);
-                const remainingSeconds = seconds % 60;
-                timerElement.textContent = `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-            }
-        }
-    }
-
-    incrementTimer(habitId) {
-        const habit = this.habits.find(h => h.id === habitId);
-        if (habit) {
-            habit.timerDuration = Math.min(3600, habit.timerDuration + 5);
-            this.saveAndUpdate();
-        }
-    }
-
-    decrementTimer(habitId) {
-        const habit = this.habits.find(h => h.id === habitId);
-        if (habit) {
-            habit.timerDuration = Math.max(5, habit.timerDuration - 5);
-            this.saveAndUpdate();
-        }
-    }
-
-    showInstallButton() {
-        const installBtn = document.createElement('button');
-        installBtn.className = 'install-button';
-        installBtn.textContent = 'Add to Home Screen';
-        installBtn.onclick = async () => {
-            if (!this.deferredPrompt) return;
-            
-            // Show the install prompt
-            this.deferredPrompt.prompt();
-            // Wait for the user to respond to the prompt
-            const { outcome } = await this.deferredPrompt.userChoice;
-            // We no longer need the prompt. Clear it up
-            this.deferredPrompt = null;
-            // Hide the button
-            installBtn.style.display = 'none';
-        };
-        
-        document.querySelector('.container').prepend(installBtn);
+        saveHabits();
+        displayHabits();
+        input.value = '';
     }
 }
 
-// Register service worker with proper error handling
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', async () => {
-        try {
-            // Unregister old service worker
-            const registrations = await navigator.serviceWorker.getRegistrations();
-            for(let registration of registrations) {
-                await registration.unregister();
+// Toggle habit completion
+function toggleHabit(index, event) {
+    // Prevent the checkbox from triggering a form submission
+    event.preventDefault();
+    event.stopPropagation();
+    
+    habits[index].completed = !habits[index].completed;
+    saveHabits();
+    displayHabits();
+}
+
+// Adjust timer
+function adjustTimer(index, seconds, event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    habits[index].timer = Math.max(0, habits[index].timer + seconds);
+    habits[index].remainingTime = habits[index].timer;
+    saveHabits();
+    displayHabits();
+}
+
+// Update the sound initialization
+const timerEndSound = new Audio('./sounds/timer-end.mp3');
+
+// Modify the preloadSound function
+function preloadSound() {
+    // Create a user interaction promise
+    let userInteractionPromise = new Promise((resolve) => {
+        document.addEventListener('click', function initSound() {
+            document.removeEventListener('click', initSound);
+            resolve();
+        }, { once: true });
+    });
+
+    // Load the sound file
+    timerEndSound.load();
+
+    // Wait for both user interaction and sound loading
+    return Promise.all([
+        userInteractionPromise,
+        new Promise((resolve) => {
+            timerEndSound.addEventListener('canplaythrough', resolve, { once: true });
+        })
+    ]).catch(error => console.log('Sound initialization error:', error));
+}
+
+// Add this function to test sound
+function testSound() {
+    timerEndSound.play()
+        .then(() => console.log('Sound played successfully'))
+        .catch(error => console.log('Error playing sound:', error));
+}
+
+// Toggle timer
+function toggleTimer(index, event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    const habit = habits[index];
+    habit.isRunning = !habit.isRunning;
+    
+    if (habit.isRunning) {
+        habit.timerId = setInterval(() => {
+            if (habit.remainingTime > 0) {
+                habit.remainingTime--;
+                updateTimerDisplay(index);
+            } else {
+                clearInterval(habit.timerId);
+                habit.isRunning = false;
+                habit.remainingTime = habit.timer;
+                
+                // Play sound with better error handling
+                playTimerEndSound();
+                
+                habit.completed = true;
+                saveHabits();
+                displayHabits();
             }
-            
-            // Register new service worker
-            const registration = await navigator.serviceWorker.register('./sw.js');
-            console.log('ServiceWorker registration successful');
-        } catch (err) {
-            console.log('ServiceWorker registration failed: ', err);
-        }
+        }, 1000);
+    } else {
+        clearInterval(habit.timerId);
+    }
+    displayHabits();
+}
+
+// Update timer display
+function updateTimerDisplay(index) {
+    const timerElement = document.getElementById(`timer-${index}`);
+    if (timerElement) {
+        const minutes = Math.floor(habits[index].remainingTime / 60);
+        const seconds = habits[index].remainingTime % 60;
+        timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+}
+
+// Display habits
+function displayHabits() {
+    const habitList = document.getElementById('habitList');
+    habitList.innerHTML = '';
+    
+    if (habits.length === 0) {
+        habitList.innerHTML = `
+            <div class="text-center py-10 text-gray-500">
+                <svg class="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                <p class="text-lg font-medium">No habits yet</p>
+                <p class="mt-1">Add your first habit to get started!</p>
+            </div>
+        `;
+        return;
+    }
+    
+    habits.forEach((habit, index) => {
+        const div = document.createElement('div');
+        div.className = `p-5 rounded-2xl border ${habit.completed ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'} transition-all duration-300 shadow hover:shadow-lg`;
+        
+        const timeAgo = getTimeAgo(habit.date);
+        const minutes = Math.floor(habit.remainingTime / 60);
+        const seconds = habit.remainingTime % 60;
+        
+        div.innerHTML = `
+            <div class="flex flex-col gap-4">
+                <div class="flex items-center gap-4">
+                    <div class="relative">
+                        <input type="checkbox" 
+                               class="w-6 h-6 rounded-full border-2 border-gray-300 text-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200"
+                               ${habit.completed ? 'checked' : ''} 
+                               onclick="toggleHabit(${index}, event)">
+                    </div>
+                    <div class="flex flex-col flex-1 min-w-0 gap-1">
+                        <span class="text-lg font-medium text-gray-800 leading-tight ${habit.completed ? 'line-through text-gray-500' : ''} truncate">
+                            ${habit.name}
+                        </span>
+                        <span class="text-sm text-gray-500">${timeAgo}</span>
+                    </div>
+                    <button onclick="deleteHabit(${index})" 
+                            class="text-gray-400 hover:text-red-500 transition-colors p-2.5 rounded-xl hover:bg-red-50">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="flex flex-col gap-3">
+                    <div class="flex items-center justify-between bg-gray-50 p-4 rounded-xl">
+                        <button onclick="adjustTimer(${index}, -5, event)" 
+                                class="w-12 h-12 flex items-center justify-center text-gray-600 hover:bg-gray-200 rounded-lg text-xl font-medium transition-colors">
+                            -
+                        </button>
+                        <div class="flex-1 text-center">
+                            <span id="timer-${index}" class="font-mono text-2xl font-semibold">
+                                ${minutes}:${seconds.toString().padStart(2, '0')}
+                            </span>
+                        </div>
+                        <button onclick="adjustTimer(${index}, 5, event)" 
+                                class="w-12 h-12 flex items-center justify-center text-gray-600 hover:bg-gray-200 rounded-lg text-xl font-medium transition-colors">
+                            +
+                        </button>
+                    </div>
+                    <button onclick="toggleTimer(${index}, event)" 
+                            class="w-full h-14 flex items-center justify-center gap-3 ${habit.isRunning ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'} text-white rounded-xl transition-all duration-200 text-base font-medium shadow-sm hover:shadow-md active:transform active:scale-98">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                  d="${habit.isRunning 
+                                      ? 'M10 9v6m4-6v6m-9-3a9 9 0 1118 0 9 9 0 01-18 0z' 
+                                      : 'M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z M21 12a9 9 0 11-18 0 9 9 0 0118 0z'}" />
+                        </svg>
+                        ${habit.isRunning ? 'Pause Timer' : 'Start Timer'}
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        // Add click handler to the entire card (optional)
+        div.addEventListener('click', (e) => {
+            // Prevent clicking the card if clicking on buttons or checkbox
+            if (!e.target.closest('button') && !e.target.closest('input[type="checkbox"]')) {
+                toggleHabit(index, e);
+            }
+        });
+        
+        habitList.appendChild(div);
     });
 }
 
-window.habitTracker = new HabitTracker(); 
+function deleteHabit(index) {
+    habits.splice(index, 1);
+    saveHabits();
+    displayHabits();
+}
+
+function getTimeAgo(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now - date);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    return `${Math.floor(diffDays / 30)} months ago`;
+}
+
+// Add new function to handle sound playing
+function playTimerEndSound() {
+    // Reset the sound to beginning
+    timerEndSound.currentTime = 0;
+    
+    // Play the sound with proper error handling
+    timerEndSound.play().catch(error => {
+        console.error('Initial sound play failed:', error);
+        // Retry once
+        timerEndSound.load();
+        setTimeout(() => {
+            timerEndSound.play().catch(e => 
+                console.error('Retry sound play failed:', e)
+            );
+        }, 100);
+    });
+}
+
+// Make sure to initialize the sound when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+    loadHabits();
+    preloadSound();
+});

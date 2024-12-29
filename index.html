@@ -3,32 +3,139 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimal Habits</title>
-    <link rel="stylesheet" href="./styles.css?v=2">
-    <link rel="manifest" href="./manifest.json?v=2">
-    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Habit Tracker</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192x192.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * { touch-action: manipulation; }
+        @supports(padding: max(0px)) {
+            .safe-padding {
+                padding-top: max(1rem, env(safe-area-inset-top));
+                padding-bottom: max(1rem, env(safe-area-inset-bottom));
+            }
+        }
+        
+        /* Custom checkbox styling */
+        input[type="checkbox"] {
+            position: relative;
+            cursor: pointer;
+            appearance: none;
+            background-color: #fff;
+            border: 2px solid #e5e7eb;
+            transition: all 0.2s ease;
+        }
+        
+        input[type="checkbox"]:checked {
+            background-color: #3b82f6;
+            border-color: #3b82f6;
+        }
+        
+        input[type="checkbox"]:checked::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 12px;
+            height: 12px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='white'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5 13l4 4L19 7'%3E%3C/path%3E%3C/svg%3E");
+            background-size: contain;
+            background-repeat: no-repeat;
+        }
+        
+        /* Prevent default form behaviors */
+        form {
+            margin: 0;
+            padding: 0;
+        }
+        
+        /* Improve checkbox interaction */
+        input[type="checkbox"] {
+            pointer-events: none; /* Handle clicks through parent element */
+        }
+        
+        /* Add smooth transitions for all interactive elements */
+        .habit-enter * {
+            transition: all 0.2s ease-out;
+        }
+        
+        /* Improve touch feedback */
+        @media (hover: none) {
+            .habit-enter:active {
+                transform: scale(0.98);
+            }
+        }
+        
+        /* Improve button feedback */
+        button:active:not(:disabled) {
+            transform: scale(0.97);
+        }
+        
+        /* Add smooth transition for disabled state */
+        button {
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+        
+        /* Add subtle hover effect to habit cards */
+        .habit-enter {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .habit-enter:hover {
+            transform: translateY(-2px);
+        }
+        
+        /* Add loading animation for timer */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .timer-running {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
 </head>
-<body>
-    <div class="container">
-        <header>
-            <h1>today</h1>
-            <div id="currentDate"></div>
-        </header>
-
-        <div class="quick-add">
-            <input type="text" id="habitInput" placeholder="Add a new habit">
-            <button class="add-button" aria-label="Add habit">+</button>
+<body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen safe-padding">
+    <div class="max-w-[375px] mx-auto px-4">
+        <div class="flex items-center justify-between mb-8">
+            <h1 class="text-2xl font-bold text-gray-800 pt-2">My Habits</h1>
+            <span class="text-sm text-gray-500" id="todayDate"></span>
+        </div>
+        
+        <div class="mb-6">
+            <div class="flex gap-2 bg-white p-2 rounded-2xl shadow-sm">
+                <input type="text" 
+                       id="habitInput" 
+                       placeholder="Add a new habit..." 
+                       class="flex-1 px-4 h-12 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-base bg-gray-50 border-0 placeholder-gray-400"
+                       onkeypress="if(event.key === 'Enter') addHabit()">
+                <button onclick="addHabit()" 
+                        class="bg-blue-500 text-white w-12 rounded-xl hover:bg-blue-600 active:bg-blue-700 transition-all duration-200 flex items-center justify-center shadow-md hover:shadow-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                </button>
+            </div>
         </div>
 
-        <div class="progress-bar">
-            <div class="progress" id="progressBar"></div>
-            <span class="progress-text" id="completedToday">0/0</span>
-        </div>
-
-        <div class="habits-list" id="habitsList"></div>
+        <div id="habitList" class="space-y-3 pb-safe"></div>
     </div>
-
-    <div id="snackbar"></div>
-    <script src="./app.js?v=2"></script>
+    
+    <script src="app.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+                .then(reg => console.log('Service Worker registered'))
+                .catch(err => console.log('Service Worker not registered', err));
+        }
+        
+        // Display today's date
+        const options = { weekday: 'long', month: 'long', day: 'numeric' };
+        document.getElementById('todayDate').textContent = new Date().toLocaleDateString('en-US', options);
+    </script>
 </body>
-</html> 
+</html>
