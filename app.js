@@ -214,12 +214,15 @@ class HabitTracker {
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', async () => {
         try {
+            // Unregister old service worker
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            for(let registration of registrations) {
+                await registration.unregister();
+            }
+            
+            // Register new service worker
             const registration = await navigator.serviceWorker.register('./sw.js');
             console.log('ServiceWorker registration successful');
-            
-            if ('sync' in registration) {
-                await registration.sync.register('update-badge');
-            }
         } catch (err) {
             console.log('ServiceWorker registration failed: ', err);
         }
