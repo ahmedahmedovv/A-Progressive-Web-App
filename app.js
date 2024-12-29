@@ -17,6 +17,17 @@ class HabitTracker {
             });
         }, { once: true });
         
+        // Add to Home Screen prompt
+        this.deferredPrompt = null;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevent Chrome 67 and earlier from automatically showing the prompt
+            e.preventDefault();
+            // Stash the event so it can be triggered later
+            this.deferredPrompt = e;
+            // Show the install button
+            this.showInstallButton();
+        });
+        
         this.init();
     }
 
@@ -256,6 +267,26 @@ class HabitTracker {
             habit.timerDuration = Math.max(5, habit.timerDuration - 5);
             this.saveAndUpdate();
         }
+    }
+
+    showInstallButton() {
+        const installBtn = document.createElement('button');
+        installBtn.className = 'install-button';
+        installBtn.textContent = 'Add to Home Screen';
+        installBtn.onclick = async () => {
+            if (!this.deferredPrompt) return;
+            
+            // Show the install prompt
+            this.deferredPrompt.prompt();
+            // Wait for the user to respond to the prompt
+            const { outcome } = await this.deferredPrompt.userChoice;
+            // We no longer need the prompt. Clear it up
+            this.deferredPrompt = null;
+            // Hide the button
+            installBtn.style.display = 'none';
+        };
+        
+        document.querySelector('.container').prepend(installBtn);
     }
 }
 
