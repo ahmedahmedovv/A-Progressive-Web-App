@@ -203,4 +203,12 @@ h1 {
 .habit-item:hover .badge {
     animation: none;
     transform: translateY(-50%) scale(1.5);
+}
+
+.timer {
+    font-size: 14px;
+    color: var(--accent);
+    margin-top: 4px;
+    font-weight: 500;
+    font-family: monospace;
 } 
